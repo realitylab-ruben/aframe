@@ -3,13 +3,20 @@ var utils = require('../utils/');
 
 registerComponent('laser-controls', {
   schema: {
+    cursor: {type: 'boolean', default: true},
     hand: {default: 'right'}
   },
+
+  cursorEl: null,
 
   init: function () {
     var config = this.config;
     var data = this.data;
     var el = this.el;
+
+    if (data.cursor) {
+      el.sceneEl.addEventListener('renderstart', this.setupCursor.bind(this));
+    }
 
     // Set all controller models.
     el.setAttribute('daydream-controls', {hand: data.hand});
@@ -22,6 +29,10 @@ registerComponent('laser-controls', {
       var controllerConfig = config[evt.detail.name];
 
       if (!controllerConfig) { return; }
+
+      if (this.cursorEl) {
+        this.cursorEl.parentNode.removeChild(this.cursorEl);
+      }
 
       el.setAttribute('raycaster', utils.extend({
         showLine: true
@@ -51,5 +62,24 @@ registerComponent('laser-controls', {
     'vive-controls': {
       cursor: {downEvents: ['triggerdown'], upEvents: ['triggerup']}
     }
+  },
+
+  setupCursor: function () {
+    var el = this.el;
+    var camera = el.sceneEl.camera;
+    if (!camera) {
+      return;
+    }
+
+    var cursorEl = document.createElement('a-cursor');
+    for (var attribute of ['color', 'fuse', 'fuse-timeout', 'max-distance']) {
+      var value = el.getAttribute(attribute);
+      if (value) {
+        cursorEl.setAttribute(attribute, value);
+      }
+    }
+
+    camera.el.appendChild(cursorEl);
+    this.cursorEl = cursorEl;
   }
 });
